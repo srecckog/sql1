@@ -1,0 +1,6 @@
+USE FeroApp ; DECLARE @TmpFz int ; SET @TmpFz = 1689
+
+SELECT ID_ULR, Parent_ULR_ID, VrstaDokumenta, BrojDokumenta, DatumDokumenta, ID_MAT, NazivMat, KolicinaInventura, ID_Par, CijenaKom, JCD, DatumJCD FROM UlazRobeDetaljnoView WHERE ID_ULR IN(SELECT ID_ULR FROM IzlazRobeDetaljnoView WHERE ID_IZR IN(SELECT ID_IZR FROM UlazProizvodaDetaljnoView WHERE ID_ULP IN(SELECT ID_Ulp FROM FaktureDetaljnoView WHERE ID_FZ = @TmpFz AND ID_Ulp IS NOT NULL))) OR ID_ULR IN(12506,13533,12506,13412) ORDER BY JCD
+SELECT ID_IZR, VrstaDokumenta, BrojDokumenta, DatumIzlaza, ID_Mat, NazivMat, Kolicina, BrojRN FROM IzlazRobeDetaljnoView WHERE ID_IZR IN(SELECT ID_IZR FROM UlazProizvodaDetaljnoView WHERE ID_ULP IN(SELECT ID_Ulp FROM FaktureDetaljnoView WHERE ID_FZ = @TmpFz AND ID_Ulp IS NOT NULL))
+SELECT ID_ULP, ID_IZR, ID_Pro, NazivPro, KolicinaMat, KolicinaPro, BrojRN1, BrojNar1, BrojRN2, BrojNar2, Obrada1, CijenaObrada1, Obrada2, CijenaObrada2 FROM UlazProizvodaDetaljnoView WHERE ID_ULP IN(SELECT ID_Ulp FROM FaktureDetaljnoView WHERE ID_FZ = @TmpFz AND ID_Ulp IS NOT NULL)
+SELECT (SELECT JCD FROM UlazRobeDetaljnoView WHERE ID_ULR = dbo.PronadjiULR(ID_Ulp, 'ULP')), ID_FS, ID_Ulp, VrstaFakture, BrojFakture, DatumFakture, ID_Par, ID_Pro, NazivPro, KolicinaPro, JCD, DatumJCD FROM FaktureDetaljnoView WHERE ID_FZ = @TmpFz AND ID_Ulp IS NOT NULL ORDER BY JCD

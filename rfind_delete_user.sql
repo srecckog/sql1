@@ -1,0 +1,3 @@
+--delete  [user] where extid=1149
+--delete from badge where extid=1149
+--delete from axsgroupuser where users=1149

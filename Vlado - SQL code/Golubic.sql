@@ -1,0 +1,23 @@
+USE FeroAppArh2015;
+
+WITH MyTmpTable1 AS(
+SELECT FeroApp.dbo.Proizvodi.ID_Pro, FeroApp.dbo.Proizvodi.ID_Pro_Kup AS SAP_ID, FeroApp.dbo.Proizvodi.NazivPro, ISNULL(FeroApp.dbo.Proizvodi.Kupac, '') AS Kupac, (SELECT TOP 1 FaktureDetaljnoView.ID_FS FROM FaktureDetaljnoView WHERE FaktureDetaljnoView.ID_Pro = Proizvodi.ID_Pro AND FaktureDetaljnoView.DatumFakture <= '2015-09-30' AND VrstaFakture IN('Valjcici-FX', 'Valjcici-FX-P1') AND FaktureDetaljnoView.BrojRN IN(SELECT NarudzbeSta.BrojRN FROM NarudzbeSta) ORDER BY FaktureDetaljnoView.DatumFakture DESC) AS ID_FS FROM FeroApp.dbo.Proizvodi WHERE FeroApp.dbo.Proizvodi.VrstaPro = 'Valjak' AND LEN(FeroApp.dbo.Proizvodi.ID_Pro_Kup) > 10), 
+MyTmpTable2 AS(
+SELECT MyTmpTable1.*, (SELECT FaktureSta.BrojRN FROM FaktureSta WHERE FaktureSta.ID_FS = MyTmpTable1.ID_FS) AS BrojRN, (SELECT FaktureDetaljnoView.DatumFakture FROM FaktureDetaljnoView WHERE FaktureDetaljnoView.ID_FS = MyTmpTable1.ID_FS) AS DatumFakture, CAST((SELECT FaktureSta.CijenaProKom FROM FaktureSta WHERE FaktureSta.ID_FS = MyTmpTable1.ID_FS) AS float) AS CijenaProKom FROM MyTmpTable1 ),
+MyTmpTable3 AS( 
+SELECT *, (SELECT TOP 1 FaktureDetaljnoView.ID_FS FROM FaktureDetaljnoView WHERE FaktureDetaljnoView.DatumFakture BETWEEN '2015-10-01' AND '2015-12-31' AND FaktureDetaljnoView.ID_Pro = MyTmpTable2.ID_Pro ORDER BY FaktureDetaljnoView.DatumFakture DESC) AS ID_FS_iv FROM MyTmpTable2), 
+MyTmpTable4 AS(
+SELECT * FROM MyTmpTable3) , 
+MyTmpTable5 AS(
+SELECT *, (SELECT TOP 1 FeroApp.dbo.FaktureDetaljnoView.ID_FS FROM FeroApp.dbo.FaktureDetaljnoView WHERE FeroApp.dbo.FaktureDetaljnoView.DatumFakture BETWEEN '2016-01-01' AND '2016-03-31' AND FeroApp.dbo.FaktureDetaljnoView.ID_Pro = MyTmpTable4.ID_Pro ORDER BY FeroApp.dbo.FaktureDetaljnoView.DatumFakture DESC) AS ID_FS_i FROM MyTmpTable4),
+MyTmpTable6 AS(
+SELECT *, CAST((SELECT FeroApp.dbo.FaktureSta.CijenaProKom FROM FeroApp.dbo.FaktureSta WHERE FeroApp.dbo.FaktureSta.ID_FS = MyTmpTable5.ID_FS_i) AS float) AS CijenaProKom_i FROM MyTmpTable5)
+
+SELECT ID_Pro, SAP_ID, NazivPro, Kupac, CijenaProKom, CAST(ISNULL((SELECT SUM(ISNULL(FaktureDetaljnoView.KolicinaPro, 0)) FROM FaktureDetaljnoView WHERE FaktureDetaljnoView.ID_Pro = MyTmpTable6.ID_Pro AND FaktureDetaljnoView.DatumFakture <= '2015-09-30' AND FaktureDetaljnoView.CijenaProKom = MyTmpTable6.CijenaProKom AND FaktureDetaljnoView.VlasnistvoFX = 1), 0) AS float) AS Kolicina, 
+	CAST((SELECT TOP 1 FaktureDetaljnoView.CijenaProKom FROM FaktureDetaljnoView WHERE FaktureDetaljnoView.ID_Pro = MyTmpTable6.ID_Pro AND FaktureDetaljnoView.DatumFakture BETWEEN '2015-10-01' AND '2015-12-31' AND FaktureDetaljnoView.VlasnistvoFX = 1 ORDER BY FaktureDetaljnoView.DatumFakture DESC) AS float) AS ZadnjaCijena_iv, 
+	CAST(ISNULL((SELECT SUM(ISNULL(FaktureDetaljnoView.KolicinaPro, 0)) FROM FaktureDetaljnoView WHERE FaktureDetaljnoView.ID_Pro = MyTmpTable6.ID_Pro AND FaktureDetaljnoView.DatumFakture BETWEEN '2015-10-01' AND '2015-12-31' AND FaktureDetaljnoView.VlasnistvoFX = 1), 0) AS float) AS Kolicina_iv, 
+	CAST(ISNULL((SELECT SUM(ISNULL(FaktureDetaljnoView.KolicinaPro, 0) * ISNULL(FaktureDetaljnoView.CijenaProKom, 0)) FROM FaktureDetaljnoView WHERE FaktureDetaljnoView.ID_Pro = MyTmpTable6.ID_Pro AND FaktureDetaljnoView.DatumFakture BETWEEN '2015-10-01' AND '2015-12-31' AND FaktureDetaljnoView.VlasnistvoFX = 1), 0) AS float) AS Iznos_iv, 	
+	CAST((SELECT TOP 1 FeroApp.dbo.FaktureDetaljnoView.CijenaProKom FROM FeroApp.dbo.FaktureDetaljnoView WHERE FeroApp.dbo.FaktureDetaljnoView.ID_Pro = MyTmpTable6.ID_Pro AND FeroApp.dbo.FaktureDetaljnoView.DatumFakture BETWEEN '2016-01-01' AND '2016-03-31' AND FeroApp.dbo.FaktureDetaljnoView.VlasnistvoFX = 1 ORDER BY FeroApp.dbo.FaktureDetaljnoView.DatumFakture DESC) AS float) AS ZadnjaCijena_i, 
+	CAST(ISNULL((SELECT SUM(ISNULL(FeroApp.dbo.FaktureDetaljnoView.KolicinaPro, 0)) FROM FeroApp.dbo.FaktureDetaljnoView WHERE FeroApp.dbo.FaktureDetaljnoView.ID_Pro = MyTmpTable6.ID_Pro AND FeroApp.dbo.FaktureDetaljnoView.DatumFakture BETWEEN '2016-01-01' AND '2016-03-31' AND FeroApp.dbo.FaktureDetaljnoView.VlasnistvoFX = 1), 0) AS float) AS Kolicina_i, 
+	CAST(ISNULL((SELECT SUM(ISNULL(FeroApp.dbo.FaktureDetaljnoView.KolicinaPro, 0) * ISNULL(FeroApp.dbo.FaktureDetaljnoView.CijenaProKom, 0)) FROM FeroApp.dbo.FaktureDetaljnoView WHERE FeroApp.dbo.FaktureDetaljnoView.ID_Pro = MyTmpTable6.ID_Pro AND FeroApp.dbo.FaktureDetaljnoView.DatumFakture BETWEEN '2016-01-01' AND '2016-03-31' AND FeroApp.dbo.FaktureDetaljnoView.VlasnistvoFX = 1), 0) AS float) AS Iznos_i 	
+	FROM MyTmpTable6
